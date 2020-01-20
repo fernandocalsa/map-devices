@@ -8,7 +8,7 @@ function Cluster({
   total,
   onClick,
 }) {
-  let padding = (count/total) * 50;
+  let padding = (count/total) * 200;
   padding = padding > 20 ? 20 : padding;
   return (
     <Marker latitude={latitude} longitude={longitude}>
@@ -21,7 +21,7 @@ function Cluster({
           fontSize: "1.2rem",
           lineHeight: "25px",
           textAlign: "center",
-          padding: `${padding}px`,
+          padding: `${2+padding}px`,
           width: "25px",
           height: "25px",
         }}
