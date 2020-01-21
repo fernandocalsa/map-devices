@@ -6,6 +6,11 @@ import 'normalize.css';
 import devices from "./data/devices.json";
 
 function App() {
+  const [mapPosition, setMapPosition] = useState({
+    latitude: 0,
+    longitude: 0,
+    zoom: 4,
+  });
   const [clusters, setClusters] = useState([]);
   useEffect(() => {
     const devicesCoordinates = devices.map(device => ([
@@ -18,13 +23,25 @@ function App() {
       if (err) console.error(err);
       else setClusters(res);
     });
-  }, [])
+  }, []);
+
+  const onMapMove = (viewport, mapBounds) => {
+    setMapPosition((mapPosition) => ({
+      ...mapPosition,
+      ...viewport,
+    }));
+  }
 
   return (
     <div>
-      <Map>
-        {clusters.map(({centroid, cluster}) => (
+      <Map
+        latitude={mapPosition.latitude}
+        longitude={mapPosition.longitude}
+        zoom={mapPosition.zoom}
+        onMove={onMapMove}>
+        {clusters.map(({centroid, cluster}, i) => (
           <Cluster
+            key={i}
             latitude={centroid[0]}
             longitude={centroid[1]}
             count={cluster.length}
