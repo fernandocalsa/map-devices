@@ -32,6 +32,15 @@ function App() {
     }));
   }
 
+  const onClusterClick = (centroid) => {
+    setMapPosition(mapPosition => ({
+      ...mapPosition,
+      latitude: centroid[0],
+      longitude: centroid[1],
+      zoom: mapPosition.zoom+2,
+    }));
+  }
+
   return (
     <div>
       <Map
@@ -42,6 +51,7 @@ function App() {
         {clusters.map(({centroid, cluster}, i) => (
           <Cluster
             key={i}
+            onClick={() => onClusterClick(centroid, i)}
             latitude={centroid[0]}
             longitude={centroid[1]}
             count={cluster.length}
