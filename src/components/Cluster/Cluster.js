@@ -12,7 +12,7 @@ function Cluster({
   padding = padding > 20 ? 20 : padding;
   return (
     <Marker latitude={latitude} longitude={longitude}>
-      <div 
+      <div
         style={{
           borderRadius: "50%",
           border: "1px solid #FFF",
