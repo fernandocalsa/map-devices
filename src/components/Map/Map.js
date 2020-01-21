@@ -8,7 +8,7 @@ function Map({children}) {
     height: "100vh",
     latitude: 0,
     longitude: 0,
-    zoom: 2
+    zoom: 1
   });
 
   return (
