@@ -1,63 +1,82 @@
-import React, { useState, useEffect } from 'react';
-import kmeans from 'node-kmeans';
-import Map from './components/Map';
-import Cluster from './components/Cluster';
+import React, { useState } from 'react';
+import ReactMapGL, { Source, Layer, NavigationControl } from 'react-map-gl';
 import 'normalize.css';
 import devices from "./data/devices.json";
+import Filter from './components/Filter';
+const mapbox_token = process.env.REACT_APP_MAPBOX
+
+const devicesGeoJson = devices.map(({Geometry, ...properties}) => ({
+  type: "Feature",
+  geometry: {
+    type: Geometry.Type,
+    coordinates: Geometry.Coordinates,
+  },
+  properties,
+}));
+
 
 function App() {
-  const [mapPosition, setMapPosition] = useState({
+  const [viewport, setViewport] = useState({
+    width: "100%",
+    height: "100vh",
     latitude: 0,
     longitude: 0,
-    zoom: 4,
+    zoom: 1,
   });
-  const [clusters, setClusters] = useState([]);
-  useEffect(() => {
-    const devicesCoordinates = devices.map(device => ([
-      device.Geometry.Coordinates[0],
-      device.Geometry.Coordinates[1],
-    ]));
-    let numOfClusters = Math.floor(devicesCoordinates.length/50);
-    numOfClusters = numOfClusters > 10 ? 10 : numOfClusters;
-    kmeans.clusterize(devicesCoordinates, {k: numOfClusters}, (err,res) => {
-      if (err) console.error(err);
-      else setClusters(res);
-    });
-  }, []);
 
-  const onMapMove = (viewport, mapBounds) => {
-    setMapPosition((mapPosition) => ({
-      ...mapPosition,
-      ...viewport,
-    }));
-  }
-
-  const onClusterClick = (centroid) => {
-    setMapPosition(mapPosition => ({
-      ...mapPosition,
-      latitude: centroid[0],
-      longitude: centroid[1],
-      zoom: mapPosition.zoom+2,
-    }));
-  }
+  const [devices, setDevices] = useState(devicesGeoJson);
+  const geojson = {
+    type: 'FeatureCollection',
+    features: devices
+  };
 
   return (
     <div>
-      <Map
-        latitude={mapPosition.latitude}
-        longitude={mapPosition.longitude}
-        zoom={mapPosition.zoom}
-        onMove={onMapMove}>
-        {clusters.map(({centroid, cluster}, i) => (
-          <Cluster
-            key={i}
-            onClick={() => onClusterClick(centroid, i)}
-            latitude={centroid[0]}
-            longitude={centroid[1]}
-            count={cluster.length}
-            total={devices.length}/>
-        ))}
-      </Map>
+      <ReactMapGL
+        mapboxApiAccessToken={mapbox_token}
+        onViewportChange={setViewport}
+        interactiveLayerIds={["clusters"]}
+        {...viewport}
+      >
+        <Source
+            type="geojson"
+            data={geojson}
+            cluster={true}
+            clusterMaxZoom={14}
+            clusterRadius={50}>
+            <Layer
+              id="clusters"
+              type="circle"
+              filter={['has', 'point_count']}
+              paint={{
+                'circle-color': ['step', ['get', 'point_count'], '#51bbd6', 10, '#f1f075', 25, '#f28cb1'],
+                'circle-radius': ['step', ['get', 'point_count'], 15, 20, 20, 30, 30]
+              }} />
+            <Layer
+              id="clusters-count"
+              type="symbol"
+              filter={['has', 'point_count']}
+              layout={{
+                "text-field": "{point_count}",
+                'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+                "text-size": 12,
+              }} />
+            <Layer
+              id="unclustered-points"
+              type="circle"
+              filter={['!', ['has', 'point_count']]}
+              paint={{
+                'circle-radius': 10,
+                'circle-color': '#007cbf'
+              }} />
+          </Source>
+        <div style={{position: 'absolute', right: 0}}>
+          <NavigationControl />
+        </div>
+        <div style={{position: 'absolute', left: 0, zIndex: 9999}}>
+          <Filter devices={devicesGeoJson} onUpdate={setDevices} />
+        </div>
+      </ReactMapGL>
     </div>
   );
 }
