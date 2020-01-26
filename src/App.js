@@ -4,6 +4,7 @@ import 'normalize.css';
 import devices from "./data/devices.json";
 import Filter from './components/Filter';
 import DeviceInfo from './components/DeviceInfo';
+import layers from "./layers";
 const mapbox_token = process.env.REACT_APP_MAPBOX
 
 const devicesGeoJson = devices.map(({Geometry, ...properties}) => ({
@@ -60,31 +61,9 @@ function App() {
             cluster={true}
             clusterMaxZoom={2}
             clusterRadius={50}>
-            <Layer
-              id="clusters"
-              type="circle"
-              filter={['has', 'point_count']}
-              paint={{
-                'circle-color': '#ffe100',
-                'circle-radius': ['step', ['get', 'point_count'], 20, 20, 25, 30, 30]
-              }} />
-            <Layer
-              id="clusters-count"
-              type="symbol"
-              filter={['has', 'point_count']}
-              layout={{
-                "text-field": "{point_count}",
-                'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-                "text-size": 12,
-              }} />
-            <Layer
-              id="unclustered-points"
-              type="circle"
-              filter={['!', ['has', 'point_count']]}
-              paint={{
-                'circle-radius': 10,
-                'circle-color': ["step", ["get", "Temperature"], "#00bfff", 15, "#ffbb00", 30, "#ff0000"],
-              }} />
+            <Layer {...layers.clusters} />
+            <Layer {...layers.clustersCount} />
+            <Layer {...layers.unclusteredPoints} />
           </Source>
           {
             deviceSelected && 
