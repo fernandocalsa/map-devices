@@ -83,7 +83,7 @@ function App() {
               filter={['!', ['has', 'point_count']]}
               paint={{
                 'circle-radius': 10,
-                'circle-color': '#007cbf'
+                'circle-color': ["step", ["get", "Temperature"], "#00bfff", 15, "#ffbb00", 30, "#ff0000"],
               }} />
           </Source>
           {
