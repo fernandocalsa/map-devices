@@ -58,14 +58,14 @@ function App() {
             type="geojson"
             data={geojson}
             cluster={true}
-            clusterMaxZoom={3}
+            clusterMaxZoom={2}
             clusterRadius={50}>
             <Layer
               id="clusters"
               type="circle"
               filter={['has', 'point_count']}
               paint={{
-                'circle-color': ['step', ['get', 'point_count'], '#51bbd6', 20, '#f1f075', 30, '#f28cb1'],
+                'circle-color': '#ffe100',
                 'circle-radius': ['step', ['get', 'point_count'], 20, 20, 25, 30, 30]
               }} />
             <Layer
