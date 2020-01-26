@@ -1,24 +1,106 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from 'react';
+import ReactMapGL, { Source, Layer, NavigationControl } from 'react-map-gl';
+import 'normalize.css';
+import devices from "./data/devices.json";
+import Filter from './components/Filter';
+import DeviceInfo from './components/DeviceInfo';
+const mapbox_token = process.env.REACT_APP_MAPBOX
+
+const devicesGeoJson = devices.map(({Geometry, ...properties}) => ({
+  type: "Feature",
+  geometry: {
+    type: Geometry.Type,
+    coordinates: Geometry.Coordinates,
+  },
+  properties,
+}));
+
 
 function App() {
+  const [viewport, setViewport] = useState({
+    width: "100%",
+    height: "100vh",
+    latitude: 0,
+    longitude: 0,
+    zoom: 1,
+  });
+
+  const [deviceSelected, setDeviceSelected] = useState(null);
+
+  const [devices, setDevices] = useState(devicesGeoJson);
+  const geojson = {
+    type: 'FeatureCollection',
+    features: devices
+  };
+
+  const onMapClick = (event) => {
+    const feature = event.features[0];
+    if (!feature) {
+      setDeviceSelected(null);
+      return;
+    }
+    setDeviceSelected({
+      properties: feature.properties,
+      coordinates: feature.geometry.coordinates,
+    });
+  }
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div>
+      <ReactMapGL
+        mapboxApiAccessToken={mapbox_token}
+        onViewportChange={setViewport}
+        interactiveLayerIds={["unclustered-points"]}
+        onClick={onMapClick}
+        {...viewport}
+      >
+        <Source
+            type="geojson"
+            data={geojson}
+            cluster={true}
+            clusterMaxZoom={2}
+            clusterRadius={50}>
+            <Layer
+              id="clusters"
+              type="circle"
+              filter={['has', 'point_count']}
+              paint={{
+                'circle-color': '#ffe100',
+                'circle-radius': ['step', ['get', 'point_count'], 20, 20, 25, 30, 30]
+              }} />
+            <Layer
+              id="clusters-count"
+              type="symbol"
+              filter={['has', 'point_count']}
+              layout={{
+                "text-field": "{point_count}",
+                'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+                "text-size": 12,
+              }} />
+            <Layer
+              id="unclustered-points"
+              type="circle"
+              filter={['!', ['has', 'point_count']]}
+              paint={{
+                'circle-radius': 10,
+                'circle-color': ["step", ["get", "Temperature"], "#00bfff", 15, "#ffbb00", 30, "#ff0000"],
+              }} />
+          </Source>
+          {
+            deviceSelected && 
+            <DeviceInfo 
+              coordinates={deviceSelected.coordinates}
+              onClose={() => setDeviceSelected(null)}
+              device={deviceSelected.properties}
+            />
+          }
+        <div style={{position: 'absolute', right: 0}}>
+          <NavigationControl />
+        </div>
+        <div style={{position: 'absolute', left: 0}}>
+          <Filter onUpdate={setDevices} devices={devicesGeoJson} />
+        </div>
+      </ReactMapGL>
     </div>
   );
 }
