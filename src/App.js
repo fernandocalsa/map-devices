@@ -3,6 +3,7 @@ import ReactMapGL, { Source, Layer, NavigationControl } from 'react-map-gl';
 import 'normalize.css';
 import devices from "./data/devices.json";
 import Filter from './components/Filter';
+import DeviceInfo from './components/DeviceInfo';
 const mapbox_token = process.env.REACT_APP_MAPBOX
 
 const devicesGeoJson = devices.map(({Geometry, ...properties}) => ({
@@ -24,33 +25,48 @@ function App() {
     zoom: 1,
   });
 
+  const [deviceSelected, setDeviceSelected] = useState(null);
+
   const [devices, setDevices] = useState(devicesGeoJson);
   const geojson = {
     type: 'FeatureCollection',
     features: devices
   };
 
+  const onMapClick = (event) => {
+    const feature = event.features[0];
+    if (!feature) {
+      setDeviceSelected(null);
+      return;
+    }
+    setDeviceSelected({
+      properties: feature.properties,
+      coordinates: feature.geometry.coordinates,
+    });
+  }
+
   return (
     <div>
       <ReactMapGL
         mapboxApiAccessToken={mapbox_token}
         onViewportChange={setViewport}
-        interactiveLayerIds={["clusters"]}
+        interactiveLayerIds={["unclustered-points"]}
+        onClick={onMapClick}
         {...viewport}
       >
         <Source
             type="geojson"
             data={geojson}
             cluster={true}
-            clusterMaxZoom={14}
+            clusterMaxZoom={3}
             clusterRadius={50}>
             <Layer
               id="clusters"
               type="circle"
               filter={['has', 'point_count']}
               paint={{
-                'circle-color': ['step', ['get', 'point_count'], '#51bbd6', 10, '#f1f075', 25, '#f28cb1'],
-                'circle-radius': ['step', ['get', 'point_count'], 15, 20, 20, 30, 30]
+                'circle-color': ['step', ['get', 'point_count'], '#51bbd6', 20, '#f1f075', 30, '#f28cb1'],
+                'circle-radius': ['step', ['get', 'point_count'], 20, 20, 25, 30, 30]
               }} />
             <Layer
               id="clusters-count"
@@ -70,11 +86,19 @@ function App() {
                 'circle-color': '#007cbf'
               }} />
           </Source>
+          {
+            deviceSelected && 
+            <DeviceInfo 
+              coordinates={deviceSelected.coordinates}
+              onClose={() => setDeviceSelected(null)}
+              device={deviceSelected.properties}
+            />
+          }
         <div style={{position: 'absolute', right: 0}}>
           <NavigationControl />
         </div>
-        <div style={{position: 'absolute', left: 0, zIndex: 9999}}>
-          <Filter devices={devicesGeoJson} onUpdate={setDevices} />
+        <div style={{position: 'absolute', left: 0}}>
+          <Filter onUpdate={setDevices} devices={devicesGeoJson} />
         </div>
       </ReactMapGL>
     </div>
